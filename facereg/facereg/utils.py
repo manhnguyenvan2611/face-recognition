@@ -5,22 +5,19 @@ from profiles.models import Profile
 path = 'D:\\computer-vision-project\\assignment\\facereg\\facereg\\output'
 
 """
-hàm so sánh histogram của hai ảnh
+function for comparing histogram of two faces
 """
 def compare_histograms(imageA, imageB, method='correlation'):
-    # chuyển mảng màu của hình ảnh thành dạng HSV để dễ so sánh hơn
+    # convert color to HSV for comparing more easily
     imageA = cv2.cvtColor(imageA, cv2.COLOR_BGR2HSV)
     imageB = cv2.cvtColor(imageB, cv2.COLOR_BGR2HSV)
-
-    # tính toán histogram
+    # compute histogram
     histA = cv2.calcHist([imageA], [0, 1], None, [50, 60], [0, 180, 0, 256])
     histB = cv2.calcHist([imageB], [0, 1], None, [50, 60], [0, 180, 0, 256])
-
-    # chuẩn hoá histogram
+    # standardize histogram
     cv2.normalize(histA, histA, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
     cv2.normalize(histB, histB, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
-
-    # Sử dụng correlation hoặc các công thức so sánh khác
+    # fomulars to compare the similarity of two faces
     methods = {
         'correlation': cv2.HISTCMP_CORREL,
         'chi-square': cv2.HISTCMP_CHISQR,
@@ -34,59 +31,55 @@ def compare_histograms(imageA, imageB, method='correlation'):
 hàm lấy ra khuôn mặt
 """
 def extract_face(img):    
-    # phần dò tìm khuôn mặt
+    # looking for the face in the image 
     try:
         image = cv2.imread(img)
-        # sử dụng mô hình 
+        # model 
         face_cascade = cv2.CascadeClassifier('D:\\computer-vision-project\\assignment\\.venv\\Lib\\site-packages\\cv2\\data\\haarcascade_frontalface_alt2.xml')
-        # chuyển đổi hình ảnh thành ảnh xám
+        # convert to gray image
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) 
         faces = face_cascade.detectMultiScale(gray, 1.1, 4) 
     except:
         pass
     
-    # vẽ một hình chữ nhật quanh khuôn mặt và lưu dưới định dạng jpg 
+    # draw a rectangle around the face and save in jpg format
     for (x, y, w, h) in faces: 
         cv2.rectangle(image, (x, y), (x+w, y+h), (0, 0, 255), 2) 
         faces = image[y:y + h, x:x + w] 
         cv2.imwrite(os.path.join(path, 'face2.jpg'), faces) 
 
 """
-hàm so sánh ảnh khuôn mặt của người dùng chụp 
-để đăng nhập với từng ảnh trong cơ sở dữ liệu
+function for comparing the image taken by webcam of the user 
+then comparing to each image is already saved in the database
 """
 def classify_face(img):
-    # đọc hình ảnh người dùng đăng nhập chụp qua webcam
+    # read image taken by webcam
     image = cv2.imread(img) 
-
-    # chuyển hình ảnh người dùng chụp qua webcam thành ảnh xám 
+    # convert to gray image
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) 
-
-    # sử dụng mô hình haarcascade 
+    # haarcascade model
     face_cascade = cv2.CascadeClassifier('C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\cv2\\data\\haarcascade_frontalface_default.xml') 
-    
-    # dò tìm khuôn mặt trong ảnh của người dùng chụp qua webcam
+    # find the face in the image
     faces = face_cascade.detectMultiScale(gray, 1.1, 4) 
     
-    # vẽ một hình chữ nhật quanh khuôn mặt và lưu dưới định dạng jpg 
+    # draw a rectangle around the face and save in jpg format
     for (x, y, w, h) in faces: 
         cv2.rectangle(image, (x, y), (x+w, y+h), (0, 0, 255), 2) 
         faces = image[y:y + h, x:x + w] 
         cv2.imwrite(os.path.join(path, 'face1.jpg'), faces) 
    
-    # trả về false nếu không thể dò tìm khuôn mặt
+    # return false if the model cannot find any face in the image
     if (len(faces) == 0):
         return False
     
-    # khởi tạo best_match là kết quả tính toán cho ra 
-    # giá trị cao nhất khi so sánh hai khuôn mặt
+    # initialize best_match as the output
+    # the higher best_match the more similar in faces 
     best_match = 0
-    # khởi tạo name để trả về tên người dùng
+    # initialize name variable for returning username that match in the database
     name = ''
-
-    # lấy tất cả hình ảnh của người dùng trong cơ sở dữ liệu
-    # và duyệt qua từng ảnh
+    # traverse through all images in the databse
     qs = Profile.objects.all()
+    
     for p in qs:
         photoPath = str(p.photo.path)
         extract_face(photoPath)
@@ -98,7 +91,9 @@ def classify_face(img):
             best_match = hist_score
             name = p.user.username
         print(best_match)
-    if (best_match >= 0.8):
+        
+    if (best_match >= 0.7):
         print(best_match)
         return name
+    
     return False

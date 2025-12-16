@@ -31,6 +31,7 @@ def logout_view(request):
 def register(request):
   if request.method == "POST":
     form = SignUpForm(request.POST)
+    
     if form.is_valid():
       user = form.save(commit=False)
       user.username = user.username.lower()
@@ -42,23 +43,23 @@ def register(request):
 
 def signin(request):
   is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+  
   if is_ajax:
     photo = request.POST.get('photo')
     _, str_img = photo.split(';base64')
-
     decoded_file = base64.b64decode(str_img)
-    # print(decoded_file)
-
     x = Log()
     x.photo.save('upload.png', ContentFile(decoded_file))
     x.save()
-
     qs = Profile.objects.all()
+    
     for p in qs:
         photoPath = str(p.photo.path)
         print(photoPath)
+        
     res = classify_face(x.photo.path)
-    print(res) # in ra tên của người dùng sau khi phân loại ảnh khuôn mặt
+    print(res) # print name of the user after classify the face
+    
     if res:
       user_exists = User.objects.filter(username = res).exists()
       if user_exists:
