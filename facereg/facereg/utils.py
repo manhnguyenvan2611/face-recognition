@@ -28,7 +28,7 @@ def compare_histograms(imageA, imageB, method='correlation'):
     return comparison
 
 """
-hàm lấy ra khuôn mặt
+function for cropping the face in image
 """
 def extract_face(img):    
     # looking for the face in the image 
